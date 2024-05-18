@@ -75,12 +75,31 @@ func postTasks(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func getTaskByID(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	task, ok := tasks[id]
+	if !ok {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	resp, err := json.Marshal(task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Write(resp)
+}
+
 func deleteTask(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	_, ok := tasks[id]
 	if !ok {
 		//Должен вернуть 400 Bad Request
-		http.Error(w, "", http.StatusBadRequest)
+		http.Error(w, "Task ID not found", http.StatusBadRequest)
+		return
 	}
 	delete(tasks, id)
 	//Должен вернуть 200 OK
@@ -94,6 +113,7 @@ func main() {
 	// здесь регистрируйте ваши обработчики
 	r.Get("/tasks", getTasks)
 	r.Post("/tasks", postTasks)
+	r.Get("/tasks/{id}", getTaskByID)
 	r.Delete("/tasks/{id}", deleteTask)
 
 	if err := http.ListenAndServe(":8080", r); err != nil {
